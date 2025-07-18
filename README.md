@@ -1,112 +1,112 @@
-# 3D: Stereometrické Renderování v Blenderu
+# 3D: Stereoscopic Rendering in Blender
 
-Semestrální práce je na téma stereometrického renderování pro vícepohledovou 3D auto-stereoskopickou obrazovku značky DIMENCO. 
+This semester project was focuses on stereoscopic rendering for a multi-view 3D autostereoscopic display manufactured by **DIMENCO**.
 
-![bitmap - obrázek](3d.jpg "EDIT|UPLOAD")
+[![Watch the video](https://img.youtube.com/vi/2YYBd3IZFqM/0.jpg)](https://www.youtube.com/watch?v=2YYBd3IZFqM)
 
-![bitmap - video](3d.mp4 "EDIT|UPLOAD")
+The plugin not only renders the 2D image but also generates a corresponding depth map. Both images are then merged with a header containing encoded specifications for the DIMENCO 3D display.
 
-Zajišťuje nejenom samotné renderování 2D obrazu, ale také renderování příslušné hloubkové mapy. Oba snímky jsou následně připojené k danému headeru, který má zakódované specifikace pro 3D displej značky DIMENCO.
+## User Documentation
 
-## Uživatelská dokumentace
+The plugin is written in Python and is intended for use with **Blender**.
 
-Plugin je napsaný v jazyce Python a je určený pro aplikaci Blender. 
+### Usage:
+1. Open Blender and go to **Edit > Preferences > Add-ons**.
+2. Install the plugin and activate it by checking the box.
+3. Run the plugin using the **Render > Render 2D Plus Depth Stereo** button.
+4. Choose the directory and filename for the output image and click **"Render 2D Plus Depth Stereo"** to confirm.
+5. Wait a moment. Rendering may take longer depending on scene complexity.
+6. The output will be saved to the selected directory.
 
-### Použití:
-1. Otevřete Blender a přejděte do Edit > Preferences > Add-ons.
-2. Nainstalujte plugin a poté jej aktivujte zaškrtnutím políčka.
-3. Spusťte plugin pomocí tlačítka Render > Render 2D Plus Depth Stereo.
-4. Vyberte adresář a název pro výsledný snímek a následně stiskněte pro potvrzení tlačítko "Render 2D Plus Depth Stereo".
-5. Chvíli počkejte. Pokud máte složitější objekt k renderování může tato operace trvat déle.
-6. Výsledek máte uložený v zadaném adresáři.
+## Theoretical Documentation
 
-## Teoretická dokumentace
+Autostereoscopic displays allow users to perceive 3D content without the need for special glasses.
 
-Autostereoskopické displeje umožňují uživateli vnímat 3D obraz bez potřeby speciálních brýlí. 
-
-### Princip
+### Principle
 
 ![image.png](./image.png)
 
-Základem této technologie je speciální maska umístěná před LCD panelem, která je vybavena optickými hranoly. Tyto hranoly vychylují světlo do různých směrů tak, aby každé oko vidělo jinou část obrazu (levé oko vidí pouze obraz určený pro levé oko a pravé oko vidí obraz určený pro pravé oko). Dále v závislosti na pozici uživatele vůči displeji se mění úhel zobrazení jednotlivých objektů, což přispívá ke vnímání obrazu ve 3D.
+The core of this technology is a special mask placed in front of the LCD panel, equipped with optical prisms. These prisms direct light into different angles so that each eye sees a different part of the image (left eye sees only the left view, right eye sees only the right view). Depending on the user's position relative to the screen, the perceived viewing angle of objects changes, enhancing the 3D effect.
 
+### Image Loading Process
 
-### Proces načtení obrazu
+#### Image Format
+To display images correctly on autostereoscopic screens, a format is used that combines:
 
-#### Formát obrazu
-Pro správné zobrazení na autostereoskopických displejích se používá formát kombinující:
+1. **2D Image:** The rendered color image from the selected perspective.  
+2. **Depth Map:** A grayscale map where bright areas represent objects closer to the user and dark areas represent farther objects.  
+3. **Header:** Encoded metadata (with resolution 3840×1) embedded in the image, containing information such as resolution and parameters required for proper display on DIMENCO devices.
 
-1. **2D obraz:** Vyrenderovaný barevný obraz z dané perspektivy.
-2. **Hloubkovou mapa:** Černobílá mapa, kde světlé oblasti reprezentují objekty blíž k uživateli a tmavé oblasti ty dál od uživatele.
-3. **Header:** V obrazu zakódovaná metadata (s rozlišením 3840x1), která obsahují informace o rozlišení a dalších parametrech potřebných pro správné načtení obrazu pro televize DIMENCO.
+**Data Reading:** The TV reads the 2D image, depth map, and metadata from the header.
 
-**Načtení dat:** Televize přečte 2D obraz, hloubkovou mapu a metadata z headeru.
+**Interpolation:** Pixels are interpolated based on depth data. Closer pixels are shifted more than distant pixels, simulating depth.
 
-**Interpolace:** Provede se interpolace pixelů na základě dat získaných z hloubky. To znamená, že pixel, který je blíž k uživateli, se v rámci dané perspektivy posune víc než pixel, který je umístěný dál od uživatele.
+**Parallax Calculation:** A parallax offset is calculated for each perspective based on object depth.
 
-**Výpočet paralaxy:** Pro každou perspektivu se vypočítá paralaxa (rozdíl v zobrazení objektů způsobený jejich odlišnou hloubkou).
+**Image Generation:** Multiple views are generated from the parallax data, simulating different viewing angles.
 
-**Generování obrazu:** Na základě paralaxy vzniká několik pohledů, které simulují různé úhly pohledu uživatele.
+**Projection via Mask:** The mask ensures that each view is directed toward a specific angle, so the left and right eyes see different images.
 
-**Projekce přes masku:** Maska zajistí, že každý obraz bude směrován do konkrétního úhlu, tak aby levé oko vidělo jinou perspektivu než pravé.
+### Depth Map Generation Process
 
-### Proces generování hloubkové mapy
-1. **Vykreslení scény:** Kamera vyrenderuje scénu z dané perspektivy.
-2. **Záznam vzdáleností:** Pro každý pixel je spočítána vzdálenost objektu od kamery.
-3. **Normalizace a inverze obrazu:** Hodnoty v obraze jsou normalizovány do rozsahu 0–255 a následně převrácené tak, aby:
-   - 0 odpovídala nejvzdálenějšímu bodu.
-   - 255 odpovídala nejbližšímu bodu.
+1. **Scene Rendering:** The camera renders the scene from the selected perspective.  
+2. **Distance Recording:** Each pixel stores the distance from the camera to the object.  
+3. **Normalization and Inversion:** Values are normalized to a 0–255 range and inverted so that:
+   - 0 = farthest point  
+   - 255 = closest point  
 
-## Programátorská dokumentace
+## Developer Documentation
 
-Plugin je napsaný v jazyce Python a využívá následující knihovny:
-  - `bpy`: Pro přístup k Blender Python API.
-  - `os`: Pro práci se souborovým systémem.
-  - `Pillow`: Pro práci s obrázky.
-  - `tempfile`: Pro ukládání vyrenderovaných obrázků v dočasném adresáři.
+The plugin is written in Python and uses the following libraries:
+- `bpy`: Blender Python API
+- `os`: For file system operations
+- `Pillow`: For image manipulation
+- `tempfile`: For temporary file storage during rendering
 
-### Průběh pluginu
+### Plugin Workflow
 
-**1. Aktivace pluginu**
-  - Uživatel aktivuje plugin prostřednictvím menu: Render > 2D Plus Depth Stereo Renderer.
-  - Zavolá se metoda `execute()`.
+**1. Plugin Activation**  
+- Activated via **Render > 2D Plus Depth Stereo Renderer**  
+- Calls the `execute()` method  
 
-**2. Výběr cesty pro uložení výsledného souboru**
-  - Plugin vyzve uživatele k výběru adresáře a názvu pro uložení výsledného obrázku.
-  
-  - **Uživatel zvolí cestu a název souboru:**
-    - Pokud soubor již existuje, zobrazí se chybová hláška: "File name already exists." a plugin se ukončí.
-    - Pokud název souboru končí příponou `.bmp`, přípona je odstraněna.
-    - Program si uloží výslednou cestu, název souboru a spouští renderování výsledného obrázku voláním metody `render_stereo_2d_plus_depth(context)`.
+**2. Output File Selection**  
+- The plugin prompts the user to select a directory and filename for the output image.
 
-  - **Uživatel nezvolí soubor:**
-    - Plugin se ukončí.
-    
-**3. Příprava prostředí Blenderu**
-    - Zavolá se metoda `setup_blender_env(context)`, kde se rozlišení renderovaného obrazu nastaví na 1920x2160.
+  - **If a path is selected:**  
+    - If the file already exists, an error "File name already exists." is shown and the plugin exits.  
+    - If the name ends in `.bmp`, the extension is removed.  
+    - The final path and filename are stored, and the image rendering begins via `render_stereo_2d_plus_depth(context)`.  
 
-**4. Renderování 2D obrazu**
-  - Plugin použije metodu `render_2d_image(context, tmp_path)` k renderování 2D barevného obrázku a uloží ho do dočasného adresáře ve formátu `.bmp`.
+  - **If no file is selected:**  
+    - The plugin exits.
 
-**5. Renderování hloubkové mapy**
-  - Plugin použije metodu `render_depth_image(context, tmp_path)` k renderování hloubkové mapy.
-  - Metoda `setup_blender_for_depth(context)` nastaví požadované parametry pro renderování hloubkové mapy:
-    - Černobílý režim barvy a 8-bitová hloubka barev.
-    - Aktivuje pouze hloubkový (Z) pass v rámci view layeru k renderování pouze hloubky obrazu.
-  - Využijí se Compositing nodes pro normalizaci a inverzi obrazu.
-  - Výsledek je uložen jako hloubkový obrázek do dočasného adresáře ve formátu `.bmp`.
-  
-**6. Sestavení výsledného obrázku**
-  - Po renderování 2D a hloubkového obrazu se volá metoda `render_combined_image(tmp_path, header_path)`, která:
-    - Načte 2D obraz, hloubkový obraz a hlavičkový obraz.
-    - Kombinuje je do jednoho souboru, kde je 2D obraz vpravo, hloubková mapa vlevo a hlavička je vepsaná na první řádce obrazu.
-  - Výsledek je uložen do cílového souboru ve formátu `.bmp`.
+**3. Blender Environment Setup**  
+- `setup_blender_env(context)` sets the rendering resolution to 1920×2160.
 
-**7. Informování uživatele**
-  - Po dokončení renderování se plugin ukončí s informací, že obrázek byl úspěšně vygenerován a uložen na vybranou cestu: "Rendered image saved at {filepath}.bmp".
+**4. 2D Image Rendering**  
+- `render_2d_image(context, tmp_path)` renders the color image and saves it as `.bmp` in a temporary directory.
 
-## Zdroje
-- **Článek o autostereoskopických displejích (https://cs.gali-3d.com/autostereoskopie-3d/):** Poskytnul základní informace o principu autostereoskopických displejích a také názorný obrázek.
-- **Dokumentace Blender Python API:** Poskytla základní informace o rozhraní pro vývoj pluginů pro Blender.
-- **DIMENCO specifikace Displeje:** Technické specifikace pro formát 2D-plus-Depth.
-- **Dotazování ChatGPT:** Použito hlavně k doplňkovým dotazům ohledně dokumentace Blender Python API a dovysvětlení teorie za projekcí obrazu na autostereoskopických dispejích.
+**5. Depth Map Rendering**  
+- `render_depth_image(context, tmp_path)` handles depth map rendering.
+- `setup_blender_for_depth(context)` adjusts render settings:
+  - Grayscale color mode and 8-bit depth.
+  - Activates only the depth (Z) pass for the view layer.
+- Compositing nodes are used to normalize and invert the image.
+- The result is saved as a `.bmp` depth image in the temporary directory.
+
+**6. Final Image Assembly**  
+- After both renders, `render_combined_image(tmp_path, header_path)` is called:
+  - Loads the 2D image, depth image, and header image.
+  - Combines them into a single `.bmp` file:
+    - Depth map on the left, 2D image on the right, header embedded in the top row.
+
+**7. User Notification**  
+- Once rendering is complete, a message is shown:  
+  **"Rendered image saved at {filepath}.bmp"**
+
+## Sources
+
+- **Article on autostereoscopic displays (https://cs.gali-3d.com/autostereoskopie-3d/):** Provided basic information on the principles behind autostereoscopic screens and illustrative images.
+- **Blender Python API Documentation:** Provided essential info for Blender plugin development.
+- **DIMENCO Display Specifications:** Offered technical details about the 2D-plus-Depth format.
+- **ChatGPT Queries:** Used mainly for clarifying Blender Python API and explaining the image projection theory on autostereoscopic displays.
